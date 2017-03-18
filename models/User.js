@@ -83,4 +83,14 @@ UserSchema.methods.toAuthJSON = function () {
   }
 };
 
+// method to return a user's public profile
+UserSchema.methods.toProfileJSONFor = function (user) {
+  return {
+      username: this.username,
+      bio: this.bio,
+      image: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
+      following: false
+  };
+};
+
 mongoose.model('User', UserSchema);

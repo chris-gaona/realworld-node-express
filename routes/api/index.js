@@ -3,6 +3,9 @@ var router = require('express').Router();
 // registers the users router with the api router
 router.use('/', require('./users'));
 
+// registers the profile router with the api router
+router.use('/profiles', require('./profiles'));
+
 // creates middleware to handle mongoose validation errors
 // middleware defined with 4 arguments like below it is treated as an error handler
 router.use(function (err, req, res, next) {
