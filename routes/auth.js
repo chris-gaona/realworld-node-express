@@ -8,7 +8,7 @@ function getTokenFromHeader(req) {
     // authorization header's key equals 'Token'
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Token') {
         // return the value of 'Token' key...or the token itself
-        return req.headers.authentication.split(' ')[1];
+        return req.headers.authorization.split(' ')[1];
     }
 
     return null;

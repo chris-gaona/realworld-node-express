@@ -3,6 +3,9 @@ var LocalStrategy = require('passport-local').Strategy;
 var mongoose = require('mongoose');
 var User = mongoose.model('User');
 
+// advantage to using Passport is that it gives the ability to add other authentication
+// strategies such as OAuth in the future
+
 // creating new LocalStrategy
 passport.use(new LocalStrategy({
     usernameField: 'user[email]',
