@@ -38,7 +38,10 @@ if(isProduction){
   mongoose.set('debug', true);
 }
 
+// register User model in app to make accessible across app
 require('./models/User');
+// register passport config in app
+require('./config/passport');
 
 app.use(require('./routes'));
 
