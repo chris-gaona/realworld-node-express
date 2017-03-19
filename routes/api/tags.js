@@ -2,7 +2,9 @@ var router = require('express').Router();
 var mongoose = require('mongoose');
 var Article = mongoose.model('Article');
 
+///////////////////
 // get the set of tags that have been used by articles
+///////////////////
 router.get('/', function (req, res, next) {
     // .distinct finds the distinct values for a specified field across a single collection and returns the results in an array
     // find all articles with distinct tagList or tag

@@ -4,7 +4,9 @@ var passport = require('passport');
 var User = mongoose.model('User');
 var auth = require('../auth');
 
+///////////////////
 // registration route
+///////////////////
 router.post('/users', function (req, res, next) {
    var user = new User();
 
@@ -18,7 +20,9 @@ router.post('/users', function (req, res, next) {
    }).catch(next);
 });
 
+///////////////////
 // login route
+///////////////////
 router.post('/users/login', function (req, res, next) {
     // validate that user inputted email
     // Unprocessable Entity 422 status code
@@ -49,7 +53,9 @@ router.post('/users/login', function (req, res, next) {
    })(req, res, next);
 });
 
+///////////////////
 // current user's auth payload from their token
+///////////////////
 router.get('/user', auth.required, function (req, res, next) {
     // check mongodb for user
    User.findById(req.payload.id).then(function (user) {
@@ -60,7 +66,9 @@ router.get('/user', auth.required, function (req, res, next) {
    }).catch(next);
 });
 
+///////////////////
 // update user info
+///////////////////
 router.put('/user', auth.required, function (req, res, next) {
     // check mongodb for user
    User.findById(req.payload.id).then(function (user) {

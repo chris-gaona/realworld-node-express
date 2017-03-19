@@ -19,7 +19,9 @@ router.param('username', function (req, res, next, username) {
    }).catch(next);
 });
 
+///////////////////
 // fetch user's profile by their username
+///////////////////
 router.get('/:username', auth.optional, function (req, res, next) {
     // check if payload exists on request object
     if (req.payload) {
@@ -36,7 +38,9 @@ router.get('/:username', auth.optional, function (req, res, next) {
     }
 });
 
+///////////////////
 // follow another user
+///////////////////
 router.post('/:username/follow', auth.required, function (req, res, next) {
     // assign profile id from params middleware above
    var profileId = req.profile._id;
@@ -54,7 +58,9 @@ router.post('/:username/follow', auth.required, function (req, res, next) {
    }).catch(next);
 });
 
+///////////////////
 // unfollow another user
+///////////////////
 router.delete('/:username/follow', auth.required, function (req, res, next) {
     // assign profile id from params middleware above
     var profileId = req.profile._id;

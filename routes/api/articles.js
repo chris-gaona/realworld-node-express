@@ -25,7 +25,151 @@ router.param('article', function (req, res, next, slug) {
         }).catch(next);
 });
 
+///////////////////
+// list all articles
+///////////////////
+router.get('/', auth.optional, function (req, res, next) {
+    // define variables / default query values
+   var query = {};
+   var limit = 20;
+   var offset = 0;
+
+   // if limit query is not undefined
+   if (typeof req.query.limit !== 'undefined') {
+       // override default
+       limit = req.query.limit;
+   }
+
+   // if offset query is not undefined
+   if (typeof req.query.offset !== 'undefined') {
+       // override default
+       offset = req.query.offset;
+   }
+
+   // filter articles by tags passed in
+    if (typeof req.query.tag !== 'undefined') {
+       query.tagList = {"$in": [req.query.tag]};
+    }
+
+    // Promise.all() method takes an array of promises, which will then try to resolve the array of promises, and then pass an array of resolved values to the attached .then handler
+    // filter articles by author and favoriter
+    Promise.all([
+        // PROMISE #1
+        // if req.query.author exists, find the username, else return null
+        req.query.author ? User.findOne({username: req.query.author}) : null,
+        // PROMISE #2
+        // if req.query.favorited exists, find the username, else return null
+        req.query.favorited ? User.findOne({username: req.query.favorited}) : null
+        // handle the results
+    ]).then(function (results) {
+        // author stores Promise #1
+        var author = results[0];
+        // favoriter stores Promise #2
+        var favoriter = results[1];
+
+        // if author exists
+        if (author) {
+            // add author for the query below
+           query.author = author._id;
+        }
+
+        // if favoriter exists
+        if (favoriter) {
+            // add favoriter id for the query below
+            // check for id in favorites array
+           query._id = {$in: favoriter.favorites};
+           // else if no favoriter found but query passed with favoriter
+        } else if (req.query.favorited) {
+            // add favoriter query with nothing
+           query._id = {$in: []};
+        }
+
+       // Promise.all() method takes an array of promises, which will then try to resolve the array of promises, and then pass an array of resolved values to the attached .then handler
+       return Promise.all([
+           // PROMISE #1
+           // query defaults to empty objects which queries all articles
+           Article.find(query)
+               // Number JavaScript object is a wrapper object allowing you to work with numerical values
+               // limit defaults to 20 if no query added
+               .limit(Number(limit))
+               // Number JavaScript object is a wrapper object allowing you to work with numerical values
+               // offset defaults to 0 if no query added
+               .skip(Number(offset))
+               .sort({ createdAt: 'desc' })
+               // populate author from User model
+               .populate('author')
+               .exec(),
+           // PROMISE #2
+           // get total article count based on query passed in
+           Article.count(query).exec(),
+           // PROMISE #3
+           // if req.payload exists, find the user, else return null
+           req.payload ? User.findById(req.payload.id) : null
+           // handle results in .then handler
+       ]).then(function (results) {
+           // articles connected to Promise #1
+           var articles = results[0];
+           // article count connected to Promise #2
+           var articlesCount = results[1];
+           // user info connected to Promise #3
+           // if no user is logged in, it is null
+           var user = results[2];
+
+           // return the results to the front end
+           return res.json({
+               // map each article to a specific json format on Article mongoose method
+               // return the new array of articles to front end
+               articles: articles.map(function (article) {
+                   return article.toJSONFor(user);
+               }),
+               articlesCount: articlesCount
+           });
+       });
+   }).catch(next);
+});
+
+///////////////////
+// articles authored by users being followed
+///////////////////
+router.get('/feed', auth.required, function (req, res, next) {
+   var limit = 20;
+   var offset = 0;
+
+   if (typeof req.query.limit !== 'undefined') {
+       limit = req.query.limt;
+   }
+
+   if (typeof req.query.offset !== 'undefined') {
+       offset = req.query.offset;
+   }
+
+   User.findById(req.payload.id).then(function (user) {
+       if (!user) return res.statusCode(401);
+
+       Promise.all([
+           Article.find({author: {$in: user.following}})
+               .limit(Number(limit))
+               .skip(Number(offset))
+               .populate('author')
+               .exec(),
+           Article.count({author: {$in: user.following}})
+       ]).then(function (results) {
+          var articles = results[0];
+          var articlesCount = results[1];
+
+          return res.json({
+              articles: articles.map(function (article) {
+                return article.toJSONFor(user);
+              }),
+              articlesCount: articlesCount
+          });
+       }).catch(next)
+   });
+});
+
+///////////////////
 // creating new articles
+///////////////////
 router.post('/', auth.required, function (req, res, next) {
     // check if user exists before we create anything
    User.findById(req.payload.id).then(function (user) {
@@ -48,7 +192,9 @@ router.post('/', auth.required, function (req, res, next) {
    }).catch(next);
 });
 
+///////////////////
 // reading articles
+///////////////////
 router.get('/:article', auth.optional, function (req, res, next) {
     // Promise.all() method returns a single Promise that resolves when all of the promises in the iterable argument have resolved, or rejects with the reason of the first promise that rejects
     // Promise.all(iterable);
@@ -67,7 +213,9 @@ router.get('/:article', auth.optional, function (req, res, next) {
     }).catch(next);
 });
 
+///////////////////
 // updating articles
+///////////////////
 router.put('/:article', auth.required, function (req, res, next) {
     // find the user in mongodb
     User.findById(req.payload.id).then(function (user) {
@@ -99,7 +247,9 @@ router.put('/:article', auth.required, function (req, res, next) {
     });
 });
 
+///////////////////
 // deleting articles
+///////////////////
 router.delete('/:article', auth.required, function (req, res, next) {
     // find the user
     User.findById(req.payload.id).then(function () {
@@ -118,7 +268,9 @@ router.delete('/:article', auth.required, function (req, res, next) {
     }).catch(next);
 });
 
+///////////////////
 // favorite an article
+///////////////////
 router.post('/:article/favorite', auth.required, function (req, res, next) {
     // assign article id to variable
     var articleId = req.article._id;
@@ -140,7 +292,9 @@ router.post('/:article/favorite', auth.required, function (req, res, next) {
     }).catch(next);
 });
 
+///////////////////
 // unfavorite an article
+///////////////////
 router.delete('/:article/favorite', auth.required, function (req, res, next) {
     // assign article id to variable
     var articleId = req.article._id;
@@ -182,7 +336,9 @@ router.param('comment', function (req, res, next, id) {
     }).catch(next);
 });
 
+///////////////////
 // create comments on article
+///////////////////
 router.post('/:article/comments', auth.required, function (req, res, next) {
     // find the user
     User.findById(req.payload.id).then(function (user) {
@@ -210,7 +366,9 @@ router.post('/:article/comments', auth.required, function (req, res, next) {
     }).catch(next);
 });
 
+///////////////////
 // list all comments associated with an article
+///////////////////
 router.get('/:article/comments', auth.optional, function (req, res, next) {
     // Promise.resolve(value)
     // value: Argument to be resolved by this Promise. Can also be a Promise or a thenable to resolve.
@@ -240,7 +398,9 @@ router.get('/:article/comments', auth.optional, function (req, res, next) {
    }).catch(next);
 });
 
+///////////////////
 // delete a comment
+///////////////////
 router.delete('/:article/comments/:comment', auth.required, function (req, res, next) {
     // if comment author is the same as current user
     if (req.comment.author.toString() === req.payload.id.toString()) {
