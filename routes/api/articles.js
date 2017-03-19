@@ -254,7 +254,7 @@ router.delete('/:article', auth.required, function (req, res, next) {
     // find the user
     User.findById(req.payload.id).then(function () {
         // if article author is the same as logged in user
-        if (req.article.author.toString() === req.payload.id.toString()) {
+        if (req.article.author._id.toString() === req.payload.id.toString()) {
             // remove the article from mongodb
             return req.article.remove().then(function () {
                 // send no content 204 status code
@@ -265,7 +265,7 @@ router.delete('/:article', auth.required, function (req, res, next) {
             // send forbidden 403 status code
             return res.sendStatus(403);
         }
-    }).catch(next);
+    });
 });
 
 ///////////////////
@@ -276,7 +276,7 @@ router.post('/:article/favorite', auth.required, function (req, res, next) {
     var articleId = req.article._id;
 
     // find user in mongodb
-    User.findById(req.body.id).then(function (user) {
+    User.findById(req.payload.id).then(function (user) {
         // if no user send unauthorized 401 status code
         if (!user) return res.sendStatus(401);
 

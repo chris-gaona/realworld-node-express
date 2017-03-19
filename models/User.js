@@ -166,7 +166,7 @@ UserSchema.methods.unfollow = function (id) {
 UserSchema.methods.isFollowing = function (id) {
     // The some() method tests whether some element in the array passes the test implemented by the provided function
     // return true if the callback function returns a truthy value for any array element; otherwise, false
-    return this.following.some(function (followId) {
+    return this.followings.some(function (followId) {
         // if user is found in following array return truthy value
         return followId.toString() === id.toString();
     })

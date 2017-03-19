@@ -7,10 +7,12 @@ var User = mongoose.model('User');
 var ArticleSchema = new mongoose.Schema({
     slug: {
         type: String,
-        lowercase: true,
+        lowercase: true
+    },
+    title: {
+        type: String,
         unique: true
     },
-    title: String,
     description: String,
     body: String,
     favoritesCount: {
@@ -73,13 +75,15 @@ ArticleSchema.methods.toJSONFor = function (user) {
 
 // method to keep the count of how many users have favorited an article
 ArticleSchema.methods.updateFavoriteCount = function () {
+    // assign this to article variable so when it's called below, this is the correct scope
+    var article = this;
   // utilize mongooses count method
     // count article id's in favorites array
-  return User.count({favorites: {$in: [this._id]}}).then(function (count) {
+  return User.count({favorites: {$in: [article._id]}}).then(function (count) {
       // assign count to favoritesCount
-     this.favoritesCount = count;
+     article.favoritesCount = count;
 
-     return this.save();
+     return article.save();
   });
 };
 
