@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var uniqueValidator = require('mongoose-unique-validator');
 var slug = require('slug');
+var User = mongoose.model('User');
 
 // define the article schema with validation
 var ArticleSchema = new mongoose.Schema({
@@ -45,19 +46,35 @@ ArticleSchema.pre('validate', function (next) {
    next();
 });
 
+// method to return article in json ready format or as object
 ArticleSchema.methods.toJSONFor = function (user) {
     return {
-      slug: this.slug,
-      title: this.title,
-      description: this.description,
-      body: this.body,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      tagList: this.tagList,
-      favoritesCount: this.favoritesCount,
-      // we can call the toProfileJSONFor() function because it's on the User model
-      author: this.author.toProfileJSONFor(user)
+        slug: this.slug,
+        title: this.title,
+        description: this.description,
+        body: this.body,
+        createdAt: this.createdAt,
+        updatedAt: this.updatedAt,
+        tagList: this.tagList,
+        // indicates whether or not current user viewing the article has favorited it
+        // if user, check if article is favorite, else return false
+        favorited: user ? user.isFavorite(this._id) : false,
+        favoritesCount: this.favoritesCount,
+        // we can call the toProfileJSONFor() function because it's on the User model
+        author: this.author.toProfileJSONFor(user)
     };
+};
+
+// method to keep the count of how many users have favorited an article
+ArticleSchema.methods.updateFavoriteCount = function () {
+  // utilize mongooses count method
+    // count article id's in favorites array
+  return User.count({favorites: {$in: [this._id]}}).then(function (count) {
+      // assign count to favoritesCount
+     this.favoritesCount = count;
+
+     return this.save();
+  });
 };
 
 mongoose.model('Article', ArticleSchema);

@@ -117,4 +117,48 @@ router.delete('/:article', auth.required, function (req, res, next) {
     }).catch(next);
 });
 
+// favorite an article
+router.post('/:article/favorite', auth.required, function (req, res, next) {
+    // assign article id to variable
+    var articleId = req.article._id;
+
+    // find user in mongodb
+    User.findById(req.body.id).then(function (user) {
+        // if no user send unauthorized 401 status code
+        if (!user) return res.sendStatus(401);
+
+        // add article id to favorites array in User model
+        return user.favorite(articleId).then(function () {
+            // update the total favorite count for the article
+           return req.article.updateFavoriteCount().then(function (article) {
+               // return the article in json format
+              return res.json({article: article.toJSONFor(user)});
+           });
+        });
+        // catch any error and send them to the error handler
+    }).catch(next);
+});
+
+// unfavorite an article
+router.delete('/:article/favorite', auth.required, function (req, res, next) {
+    // assign article id to variable
+    var articleId = req.article._id;
+
+    // find user in mongodb
+    User.findById(req.payload.id).then(function (user) {
+        // if no user send unauthorized 401 status code
+        if (!user) return res.sendStatus(401);
+
+        // remove article id from favorites array in User model
+        return user.unfavorite(articleId).then(function () {
+            // update total favorite count for the article
+            return req.article.updateFavoriteCount().then(function (article) {
+                // return the article in json format
+                return res.json({article: article.toJSONFor(user)});
+            });
+        });
+        // catch any error and send them to the error handler
+    }).catch(next);
+});
+
 module.exports = router;

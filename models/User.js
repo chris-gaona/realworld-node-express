@@ -27,7 +27,12 @@ var UserSchema = new mongoose.Schema({
     bio: String,
     image: String,
     hash: String,
-    salt: String
+    salt: String,
+    // creates reference to article favorited
+    favorites: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Article'
+    }]
 }, { timestamps: true });
 
 // utilizes unique validator plugin to make sure username and email are unique
@@ -91,6 +96,33 @@ UserSchema.methods.toProfileJSONFor = function (user) {
       image: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
       following: false
   };
+};
+
+// method to add a favorite article
+UserSchema.methods.favorite = function (id) {
+    // check if article has already been made favorite
+  if (this.favorites.indexOf(id) === -1) {
+      this.favorites.push(id);
+  }
+
+  return this.save();
+};
+
+// method to remove a favorite article
+UserSchema.methods.unfavorite = function (id) {
+    this.favorites.remove(id);
+
+    return this.save();
+};
+
+// method to check if user has favorited an article for font end to easily add css styles
+UserSchema.methods.isFavorite = function (id) {
+    // The some() method tests whether some element in the array passes the test implemented by the provided function
+    // return true if the callback function returns a truthy value for any array element; otherwise, false
+  return this.favorites.some(function (favoriteId) {
+      // if favorite id is found in favorites array return truthy value
+     return favoriteId.toString() === id.toString();
+  });
 };
 
 mongoose.model('User', UserSchema);
