@@ -42,6 +42,9 @@ if(isProduction){
 require('./models/User');
 // register Article model in app to make accessible across app
 require('./models/Article');
+// register Comment model in app to make accessible across ap
+require('./models/Comment');
+
 // register passport config in app
 require('./config/passport');
 

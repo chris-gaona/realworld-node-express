@@ -2,8 +2,28 @@ var router = require('express').Router();
 var passport = require('passport');
 var mongoose = require('mongoose');
 var Article = mongoose.model('Article');
+var Comment = mongoose.model('Comment');
 var User = mongoose.model('User');
 var auth = require('../auth');
+
+// middleware to intercept and pre-populate article data in req.article
+// looking for article parameters
+router.param('article', function (req, res, next, slug) {
+    // find the article in mongodb
+    Article.findOne({slug: slug})
+    // populate the author data from User model
+        .populate('author')
+        .then(function (article) {
+            // if no article send not found 404 status code
+            if (!article) return res.sendStatus(404);
+
+            // populate req.article with the article
+            req.article = article;
+
+            // pass it along to next handler
+            return next();
+        }).catch(next);
+});
 
 // creating new articles
 router.post('/', auth.required, function (req, res, next) {
@@ -26,25 +46,6 @@ router.post('/', auth.required, function (req, res, next) {
        });
        // catch any errors
    }).catch(next);
-});
-
-// middleware to intercept and pre-populate article data in req.article
-// looking for article parameters
-router.param('article', function (req, res, next, slug) {
-    // find the article in mongodb
-   Article.findOne({slug: slug})
-       // populate the author data from User model
-       .populate('author')
-       .then(function (article) {
-           // if no article send not found 404 status code
-           if (!article) return res.sendStatus(404);
-
-           // populate req.article with the article
-           req.article = article;
-
-           // pass it along to next handler
-           return next();
-       }).catch(next);
 });
 
 // reading articles
@@ -159,6 +160,106 @@ router.delete('/:article/favorite', auth.required, function (req, res, next) {
         });
         // catch any error and send them to the error handler
     }).catch(next);
+});
+
+///////////////
+// COMMENTS ENDPOINTS
+///////////////
+
+// router param middleware to resolve /:comment parameter
+// find the comment
+router.param('comment', function (req, res, next, id) {
+    // find the comment
+    Comment.findById(id).then(function (comment) {
+        // if no comment send not found 404 status code
+        if (!comment) return res.sendStatus(404);
+
+        // assign comment to request object under comment key
+        req.comment = comment;
+
+        // pass this along to the next handler
+        return next();
+    }).catch(next);
+});
+
+// create comments on article
+router.post('/:article/comments', auth.required, function (req, res, next) {
+    // find the user
+    User.findById(req.payload.id).then(function (user) {
+        // if no user found send unauthorized 401 status code
+        if (!user) return res.sendStatus(401);
+
+        // create the new comment with form data passed in req.body
+        var comment = new Comment(req.body.comment);
+        // add article id reference
+        comment.article = req.article;
+        // add author id reference
+        comment.author = user;
+
+        // save the comment
+        return comment.save().then(function () {
+            // push the comment reference id to the article
+            req.article.comments.push(comment);
+
+            // save the article
+            return req.article.save().then(function (article) {
+                // return the comment to the front end
+               res.json({comment: comment.toJSONFor(user)});
+            });
+        });
+    }).catch(next);
+});
+
+// list all comments associated with an article
+router.get('/:article/comments', auth.optional, function (req, res, next) {
+    // Promise.resolve(value)
+    // value: Argument to be resolved by this Promise. Can also be a Promise or a thenable to resolve.
+    // create promise that resolves with either finding the current user or null
+   Promise.resolve(req.payload ? User.findById(req.payload.id) : null).then(function (user) {
+       // populate the comments of article
+      return req.article.populate({
+          path: 'comments',
+          // populate the author of each comment
+          populate: {
+              path: 'author'
+          },
+          // sort by descending order using createdAt
+          options: {
+              sort: {
+                  createdAt: 'desc'
+              }
+          }
+          // execute the populate
+      }).execPopulate().then(function (article) {
+          // for each comment map it to its own JSON object to return to client
+          // will be {comments: "comment"} object for each object returned in array
+          return res.json({comments: req.article.comments.map(function (comment) {
+              return comment.toJSONFor(user);
+          })});
+      });
+   }).catch(next);
+});
+
+// delete a comment
+router.delete('/:article/comments/:comment', auth.required, function (req, res, next) {
+    // if comment author is the same as current user
+    if (req.comment.author.toString() === req.payload.id.toString()) {
+        // remove the comment reference from the article
+        req.article.comments.remove(req.comment._id);
+
+        // save the article
+        req.article.save()
+            // find the comment and remove it
+            .then(Comment.find({_id: req.comment._id}).remove().exec())
+            // then send a no content 204 status code
+            .then(function () {
+                res.sendStatus(204);
+            });
+        // if comment author is NOT the same as current user
+    } else {
+        // send forbidden 403 status code
+        res.sendStatus(403);
+    }
 });
 
 module.exports = router;

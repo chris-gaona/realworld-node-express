@@ -18,10 +18,16 @@ var ArticleSchema = new mongoose.Schema({
         default: 0
     },
     tagList: [{ type: String }],
+    // reference to user id who wrote the article
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }
+    },
+    // reference to user id's who wrote comments on the article
+    comments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment'
+    }]
 }, { timestamps: true });
 
 // plugin to validate the slug
