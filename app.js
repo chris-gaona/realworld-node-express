@@ -40,6 +40,8 @@ if(isProduction){
 
 // register User model in app to make accessible across app
 require('./models/User');
+// register Article model in app to make accessible across app
+require('./models/Article');
 // register passport config in app
 require('./config/passport');
 
