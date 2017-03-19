@@ -36,4 +36,40 @@ router.get('/:username', auth.optional, function (req, res, next) {
     }
 });
 
+// follow another user
+router.post('/:username/follow', auth.required, function (req, res, next) {
+    // assign profile id from params middleware above
+   var profileId = req.profile._id;
+
+   // check for user
+   User.findById(req.payload.id).then(function (user) {
+       // if no users send unauthorized 401 status code
+      if (!user) return res.sendStatus(401);
+
+      // follow a user
+      return user.follow(profileId).then(function () {
+          // return the user profile
+         return res.json({profile: req.profile.toProfileJSONFor(user)});
+      });
+   }).catch(next);
+});
+
+// unfollow another user
+router.delete('/:username/follow', auth.required, function (req, res, next) {
+    // assign profile id from params middleware above
+    var profileId = req.profile._id;
+
+    // check for user
+    User.findById(req.payload.id).then(function (user) {
+        // if no users send unauthorized 401 status code
+        if (!user) return res.sendStatus(401);
+
+        // unfollow a user
+        return user.unfollow(profileId).then(function () {
+            // return the user profile
+           return res.json({profile: req.profile.toProfileJSONFor(user)});
+        });
+    });
+});
+
 module.exports = router;

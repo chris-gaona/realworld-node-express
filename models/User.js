@@ -28,16 +28,26 @@ var UserSchema = new mongoose.Schema({
     image: String,
     hash: String,
     salt: String,
-    // creates reference to article favorited
+    // creates reference to Article favorited
     favorites: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Article'
+    }],
+    // creates a reference to User who is following
+    followings: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }]
 }, { timestamps: true });
 
 // utilizes unique validator plugin to make sure username and email are unique
 // error is sent if they are not unique
 UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });
+
+
+////////////////
+// USER SPECIFIC METHODS
+////////////////
 
 // Using the crypto library that comes with node to create hash and salt based on user password
 // method to set the password and store in mongodb
@@ -94,9 +104,13 @@ UserSchema.methods.toProfileJSONFor = function (user) {
       username: this.username,
       bio: this.bio,
       image: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
-      following: false
+      following: user ? user.isFollowing(this._id) : false
   };
 };
+
+////////////////
+// FAVORITE AN ARTICLE
+////////////////
 
 // method to add a favorite article
 UserSchema.methods.favorite = function (id) {
@@ -123,6 +137,39 @@ UserSchema.methods.isFavorite = function (id) {
       // if favorite id is found in favorites array return truthy value
      return favoriteId.toString() === id.toString();
   });
+};
+
+////////////////
+// FOLLOWING ANOTHER USER
+////////////////
+
+// method to follow another user
+UserSchema.methods.follow = function (id) {
+    // make sure user is not already in favorites array
+    if (this.favorites.indexOf(id) === -1) {
+        // if not in array already, push into the array
+        this.following.push(id);
+    }
+
+    return this.save();
+};
+
+// method to unfollow another user
+UserSchema.methods.unfollow = function (id) {
+    // mongoose method to remove the subdocument from its parent array
+  this.following.remove(id);
+
+  return this.save();
+};
+
+// method to check if a user is following another user for front end css styles
+UserSchema.methods.isFollowing = function (id) {
+    // The some() method tests whether some element in the array passes the test implemented by the provided function
+    // return true if the callback function returns a truthy value for any array element; otherwise, false
+    return this.following.some(function (followId) {
+        // if user is found in following array return truthy value
+        return followId.toString() === id.toString();
+    })
 };
 
 mongoose.model('User', UserSchema);
