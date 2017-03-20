@@ -92,8 +92,10 @@ UserSchema.methods.generateJWT = function () {
 // on the front-end
 UserSchema.methods.toAuthJSON = function () {
   return {
+      image: this.image,
       username: this.username,
       email: this.email,
+      bio: this.bio,
       token: this.generateJWT()
   }
 };

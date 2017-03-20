@@ -62,6 +62,7 @@ router.get('/user', auth.required, function (req, res, next) {
        // if no user return unauthorized 401 status code
        if (!user) return res.status(401);
 
+       console.log('check out', user);
        return res.json({user: user.toAuthJSON()});
    }).catch(next);
 });
