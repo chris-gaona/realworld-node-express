@@ -147,15 +147,17 @@ router.get('/feed', auth.required, function (req, res, next) {
        if (!user) return res.statusCode(401);
 
        Promise.all([
-           Article.find({author: {$in: user.following}})
+           Article.find({author: {$in: user.followings}})
                .limit(Number(limit))
                .skip(Number(offset))
                .populate('author')
                .exec(),
-           Article.count({author: {$in: user.following}})
+           Article.count({author: {$in: user.followings}})
        ]).then(function (results) {
           var articles = results[0];
           var articlesCount = results[1];
+
+           console.log('check out the articles', articles);
 
           return res.json({
               articles: articles.map(function (article) {
@@ -181,6 +183,9 @@ router.post('/', auth.required, function (req, res, next) {
 
        // set the author value to user
        article.author = user;
+
+       // create the url slug
+       article.slugify(req.body.article.title);
 
        // save the article
        return article.save().then(function () {

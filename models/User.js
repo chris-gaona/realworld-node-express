@@ -147,10 +147,10 @@ UserSchema.methods.isFavorite = function (id) {
 
 // method to follow another user
 UserSchema.methods.follow = function (id) {
-    // make sure user is not already in favorites array
-    if (this.favorites.indexOf(id) === -1) {
+    // make sure user is not already in following array
+    if (this.followings.indexOf(id) === -1) {
         // if not in array already, push into the array
-        this.following.push(id);
+        this.followings.push(id);
     }
 
     return this.save();
@@ -159,7 +159,7 @@ UserSchema.methods.follow = function (id) {
 // method to unfollow another user
 UserSchema.methods.unfollow = function (id) {
     // mongoose method to remove the subdocument from its parent array
-  this.following.remove(id);
+  this.followings.remove(id);
 
   return this.save();
 };
