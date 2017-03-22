@@ -157,8 +157,6 @@ router.get('/feed', auth.required, function (req, res, next) {
           var articles = results[0];
           var articlesCount = results[1];
 
-           console.log('check out the articles', articles);
-
           return res.json({
               articles: articles.map(function (article) {
                 return article.toJSONFor(user);
